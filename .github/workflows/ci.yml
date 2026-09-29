@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+        target: [test, asan, tsan]
+    steps:
+      - uses: actions/checkout@v4
+      # Newer kernels use more mmap ASLR entropy than TSan's shadow layout allows.
+      - name: Reduce ASLR entropy for TSan
+        if: matrix.target == 'tsan'
+        run: sudo sysctl vm.mmap_rnd_bits=28
+      - name: Build and run ${{ matrix.target }}
+        run: make ${{ matrix.target }} CC=${{ matrix.cc }}
